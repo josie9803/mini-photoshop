@@ -26,13 +26,21 @@ public class ImageModel {
 
     public BufferedImage getGrayscaleImage() {
         if (image == null) return null;
+        BufferedImage grayImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
 
-        BufferedImage grayImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        Graphics g = grayImage.getGraphics();
-        g.drawImage(image, 0, 0, null);
-        g.dispose();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                Color c = new Color(image.getRGB(x, y));
+                int red = (int) (c.getRed()*0.299);
+                int green = (int) (c.getGreen()*0.587);
+                int blue = (int) (c.getBlue()*0.114);
+                Color newColor = new Color(red+green+blue, red+green+blue, red+green+blue);
+                grayImage.setRGB(x, y, newColor.getRGB());
+            }
+        }
         return grayImage;
     }
+
 
     public BufferedImage getDitheredImage() {
         BufferedImage grayImage = getGrayscaleImage();
