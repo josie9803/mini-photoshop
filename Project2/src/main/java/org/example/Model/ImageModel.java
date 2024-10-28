@@ -1,7 +1,6 @@
 package org.example.Model;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -10,7 +9,6 @@ import java.io.IOException;
 public class ImageModel {
     private BufferedImage image;
     public void readBmpFile(File bmpFile) throws IOException {
-        // Use Apache Commons Imaging to read the BMP file
         try {
             image = Imaging.getBufferedImage(bmpFile);
         } catch (ImageReadException e) {
@@ -41,31 +39,30 @@ public class ImageModel {
         return grayImage;
     }
 
-
     public BufferedImage getDitheredImage() {
         BufferedImage grayImage = getGrayscaleImage();
         if (grayImage == null) return null;
 
-        int[][] bayerMatrix = {
-                {15, 7, 13, 5},
-                {3, 11, 1, 9},
+        int[][] ditherMatrix = {
+                {0, 8, 2, 10},
                 {12, 4, 14, 6},
-                {0, 8, 2, 10}
+                {3, 11, 1, 9},
+                {15, 7, 13, 5},
         };
-        int matrixSize = bayerMatrix.length;
-        BufferedImage ditheredImage = new BufferedImage(grayImage.getWidth(), grayImage.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+        int matrixSize = ditherMatrix.length;
+        BufferedImage ditheredImage = new BufferedImage(grayImage.getWidth(), grayImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < grayImage.getWidth(); x++) {
+            for (int y = 0; y < grayImage.getHeight(); y++) {
+                int input = new Color(grayImage.getRGB(x, y)).getRed();
+                int scaledInput = input * matrixSize * matrixSize / 256;
+                int i = x % matrixSize;
+                int j = y % matrixSize;
+                int dither = (ditherMatrix[i][j]);
 
-        for (int y = 0; y < grayImage.getHeight(); y++) {
-            for (int x = 0; x < grayImage.getWidth(); x++) {
-                int grayValue = new Color(grayImage.getRGB(x, y)).getRed(); // grayscale, so R=G=B
-                int threshold = (bayerMatrix[y % matrixSize][x % matrixSize] * 255) / (matrixSize * matrixSize);
-
-                // Apply threshold to get dithered pixel
-                int color = (grayValue > threshold) ? 255 : 0;
-                ditheredImage.setRGB(x, y, new Color(color, color, color).getRGB());
+                int output = (scaledInput > dither) ? 255 : 0;
+                ditheredImage.setRGB(x, y, new Color(output, output, output).getRGB());
             }
         }
-
         return ditheredImage;
     }
 
