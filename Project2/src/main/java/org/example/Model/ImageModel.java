@@ -1,5 +1,7 @@
 package org.example.Model;
+import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.ImageWriteException;
 import org.apache.commons.imaging.Imaging;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -8,6 +10,12 @@ import java.io.IOException;
 
 public class ImageModel {
     private BufferedImage image;
+    private int imageWidth;
+    private int imageHeight;
+    public enum ImageState {
+        ORIGINAL, GRAYSCALE, ORDERED_DITHER, AUTO_LEVEL
+    }
+    private ImageState currentState;
     public void readBmpFile(File bmpFile) throws IOException {
         try {
             image = Imaging.getBufferedImage(bmpFile);
@@ -17,17 +25,38 @@ public class ImageModel {
         if (image == null) {
             throw new IOException("Invalid BMP file.");
         }
+        imageWidth = image.getWidth();
+        imageHeight = image.getHeight();
+        currentState = ImageState.ORIGINAL;
     }
     public BufferedImage getImage(){
         return image;
     }
+    public BufferedImage getCurrentImage() {
+        return switch (currentState) {
+            case GRAYSCALE -> getGrayscaleImage();
+            case ORDERED_DITHER -> getDitheredImage();
+            case AUTO_LEVEL -> getAutoLevelImage();
+            default -> image;
+        };
+    }
+    public BufferedImage getCropImage(int x, int y, int width, int height){
+        BufferedImage cropImage = null;
+        if (image != null) {
+            cropImage = image.getSubimage(x, y, width, height);
+        }
+        return cropImage;
+    }
+    public void setCurrentState(ImageState state) {
+        this.currentState = state;
+    }
 
     public BufferedImage getGrayscaleImage() {
         if (image == null) return null;
-        BufferedImage grayImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+        BufferedImage grayImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
 
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
                 Color c = new Color(image.getRGB(x, y));
                 int red = (int) (c.getRed()*0.299);
                 int green = (int) (c.getGreen()*0.587);
@@ -36,6 +65,7 @@ public class ImageModel {
                 grayImage.setRGB(x, y, newColor.getRGB());
             }
         }
+        setCurrentState(ImageState.GRAYSCALE);
         return grayImage;
     }
 
@@ -63,23 +93,21 @@ public class ImageModel {
                 ditheredImage.setRGB(x, y, new Color(output, output, output).getRGB());
             }
         }
+        setCurrentState(ImageState.ORDERED_DITHER);
         return ditheredImage;
     }
 
-    public BufferedImage autoLevel() {
+    public BufferedImage getAutoLevelImage() {
         if (image == null) {
             return null;
         }
-
-        int width = image.getWidth();
-        int height = image.getHeight();
 
         int minIntensity = 255;
         int maxIntensity = 0;
 
         // Step 1: Find the min and max intensity values
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
                 Color color = new Color(image.getRGB(x, y));
                 int intensity = (color.getRed() + color.getGreen() + color.getBlue()) / 3; // Grayscale intensity
                 if (intensity < minIntensity) minIntensity = intensity;
@@ -87,11 +115,11 @@ public class ImageModel {
             }
         }
 
-        BufferedImage autoLeveledImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage autoLeveledImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
 
         // Step 3: Apply auto-leveling to each pixel
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
                 Color color = new Color(image.getRGB(x, y));
                 int red = clamp(autoLevelIntensity(color.getRed(), minIntensity, maxIntensity)) ;
                 int green = clamp(autoLevelIntensity(color.getGreen(), minIntensity, maxIntensity));
@@ -102,7 +130,7 @@ public class ImageModel {
                 autoLeveledImage.setRGB(x, y, newColor.getRGB());
             }
         }
-
+        setCurrentState(ImageState.AUTO_LEVEL);
         return autoLeveledImage;
     }
 
@@ -115,4 +143,9 @@ public class ImageModel {
         return (colorValue - minIntensity) * 255 / (maxIntensity - minIntensity);
     }
 
+    public void saveImage(BufferedImage editedImage, File file) throws IOException, ImageWriteException {
+        if (editedImage != null) {
+            Imaging.writeImage(editedImage, file, ImageFormats.BMP);
+        }
+    }
 }

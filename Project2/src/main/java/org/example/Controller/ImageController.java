@@ -1,4 +1,5 @@
 package org.example.Controller;
+import org.apache.commons.imaging.ImageWriteException;
 import org.example.Model.ImageModel;
 import org.example.View.ImageView;
 import java.awt.image.BufferedImage;
@@ -20,6 +21,7 @@ public class ImageController {
         view.addGrayscaleButtonListener(e -> handleGrayscaleOperation());
         view.addDitherButtonListener(e -> handleDitheringOperation());
         view.addAutoLevelButtonListener(e -> handleAutoLevelOperation());
+        view.addExportButtonListener(e -> handleExportOperation());
     }
     private void handleFileOpen() {
         File selectedFile = view.showOpenFileDialog();
@@ -56,11 +58,30 @@ public class ImageController {
     }
     private void handleAutoLevelOperation(){
         BufferedImage originalImage = model.getImage();
-        BufferedImage autoLeveledImage = model.autoLevel();
+        BufferedImage autoLeveledImage = model.getAutoLevelImage();
         if (autoLeveledImage != null) {
             view.updateImageWithAutoLevel(originalImage, autoLeveledImage);
         } else {
             view.showError("No image loaded for auto leveling.");
         }
     }
+
+    private void handleExportOperation() { // New method to handle exporting the image
+        BufferedImage grayscaleImage = model.getCurrentImage();
+        if (grayscaleImage == null) {
+            view.showError("No image loaded to export.");
+            return;
+        }
+
+        File file = view.showExportFileDialog();
+        if (file != null) {
+            try {
+                model.saveImage(grayscaleImage, file); // Delegate the save action to the model
+            } catch (IOException | ImageWriteException ex) {
+                view.showError("Failed to export image: " + ex.getMessage());
+            }
+        }
+    }
+
+
 }

@@ -1,12 +1,7 @@
 package org.example.View;
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
@@ -16,6 +11,7 @@ public class ImageView extends JFrame {
     private JMenuItem grayscaleItem;
     private JMenuItem ditherItem;
     private JMenuItem autoLevelItem;
+    private JMenuItem exportItem;
 
     public ImageView() {
         setTitle("BMP Viewer");
@@ -32,47 +28,46 @@ public class ImageView extends JFrame {
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
+        JMenu coreOperationsMenu = new JMenu("Core Operations");
         openFileItem = new JMenuItem("Open File");
-        styleButtonItem(openFileItem, new Color(165, 182, 141));
-
-        exitItem = new JMenuItem("Exit");
-        styleButtonItem(exitItem, new Color(160, 35, 52));
+        styleButtonItem(openFileItem);
+        coreOperationsMenu.add(openFileItem);
 
         grayscaleItem = new JMenuItem("Grayscale");
-        styleButtonItem(grayscaleItem, new Color(100, 149, 237));
+        styleButtonItem(grayscaleItem);
+        coreOperationsMenu.add(grayscaleItem);
 
         ditherItem = new JMenuItem("Ordered Dithering");
-        styleButtonItem(ditherItem, new Color(123, 104, 238));
+        styleButtonItem(ditherItem);
+        coreOperationsMenu.add(ditherItem);
 
         autoLevelItem = new JMenuItem("Auto Level");
-        styleButtonItem(autoLevelItem, new Color(100, 149, 237));
+        styleButtonItem(autoLevelItem);
+        coreOperationsMenu.add(autoLevelItem);
 
-        menuBar.add(openFileItem);
-        menuBar.add(exitItem);
-        menuBar.add(grayscaleItem);
-        menuBar.add(ditherItem);
-        menuBar.add(autoLevelItem);
+        JMenu optionalOperationsMenu = new JMenu("Optional Operations");
+        exportItem = new JMenuItem("Export Image");
+        styleButtonItem(exportItem);
+        optionalOperationsMenu.add(exportItem);
+
+        exitItem = new JMenuItem("Exit");
+        styleButtonItem(exitItem);
+        coreOperationsMenu.add(exitItem);
+
+        styleMenu(coreOperationsMenu);
+        styleMenu(optionalOperationsMenu);
+        menuBar.add(coreOperationsMenu);
+        menuBar.add(optionalOperationsMenu);
         setJMenuBar(menuBar);
     }
+    private void styleMenu(JMenu menu) {
+        menu.setOpaque(true);
+        menu.setPreferredSize(new Dimension(200, 40));
+    }
 
-    private void styleButtonItem(JMenuItem menuItem, Color color) {
-        menuItem.setBorder(new CompoundBorder(new LineBorder(Color.DARK_GRAY, 1),
-                new EmptyBorder(5, 20, 5, 10)));
-        menuItem.setBackground(color);
+    private void styleButtonItem(JMenuItem menuItem) {
         menuItem.setOpaque(true);
-        menuItem.setPreferredSize(new Dimension(50, 50));
-
-        menuItem.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                menuItem.setBackground(color.darker());
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                menuItem.setBackground(color);
-            }
-        });
+        menuItem.setPreferredSize(new Dimension(200, 40));
     }
 
     public void updateImage(BufferedImage image) {
@@ -123,7 +118,6 @@ public class ImageView extends JFrame {
         repaint();
     }
     public void updateImageWithAutoLevel(BufferedImage originalImage, BufferedImage autoLeveledImage) {
-        // Create icons for the original and auto-leveled images
         ImageIcon originalIcon = new ImageIcon(originalImage);
         ImageIcon autoLeveledIcon = new ImageIcon(autoLeveledImage);
 
@@ -144,8 +138,6 @@ public class ImageView extends JFrame {
         repaint();
     }
 
-
-
     public void addOpenFileButtonListener(ActionListener listener) {
         openFileItem.addActionListener(listener);
     }
@@ -163,6 +155,9 @@ public class ImageView extends JFrame {
     public void addAutoLevelButtonListener(ActionListener listener) {
         autoLevelItem.addActionListener(listener);
     }
+    public void addExportButtonListener(ActionListener listener) {
+        exportItem.addActionListener(listener);
+    }
 
     public File showOpenFileDialog() {
         JFileChooser fileChooser = new JFileChooser();
@@ -174,7 +169,21 @@ public class ImageView extends JFrame {
         }
         return null;
     }
+    public File showExportFileDialog() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export Image");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("BMP Image", "bmp"));
 
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".bmp")) {
+                file = new File(file.getAbsolutePath() + ".bmp");
+            }
+            return file;
+        }
+        return null;
+    }
     public void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
