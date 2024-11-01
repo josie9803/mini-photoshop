@@ -12,6 +12,8 @@ public class ImageView extends JFrame {
     private JMenuItem ditherItem;
     private JMenuItem autoLevelItem;
     private JMenuItem exportItem;
+    private JMenuItem cropItem;
+    private CropDialog cropDialog;
 
     public ImageView() {
         setTitle("BMP Viewer");
@@ -23,6 +25,7 @@ public class ImageView extends JFrame {
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
         createMenuBar();
+        cropDialog = new CropDialog(this);
     }
 
     private void createMenuBar() {
@@ -53,6 +56,10 @@ public class ImageView extends JFrame {
         exitItem = new JMenuItem("Exit");
         styleButtonItem(exitItem);
         coreOperationsMenu.add(exitItem);
+
+        cropItem = new JMenuItem("Crop Image");
+        styleButtonItem(cropItem);
+        optionalOperationsMenu.add(cropItem);
 
         styleMenu(coreOperationsMenu);
         styleMenu(optionalOperationsMenu);
@@ -155,10 +162,8 @@ public class ImageView extends JFrame {
     public void addAutoLevelButtonListener(ActionListener listener) {
         autoLevelItem.addActionListener(listener);
     }
-    public void addExportButtonListener(ActionListener listener) {
-        exportItem.addActionListener(listener);
-    }
-
+    public void addExportButtonListener(ActionListener listener) { exportItem.addActionListener(listener);}
+    public void addCropButtonListener(ActionListener listener) { cropItem.addActionListener(listener);}
     public File showOpenFileDialog() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("BMP Images", "bmp"));
@@ -184,6 +189,7 @@ public class ImageView extends JFrame {
         }
         return null;
     }
+
     public void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }

@@ -3,17 +3,19 @@ import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.ImageWriteException;
 import org.apache.commons.imaging.Imaging;
+import org.example.View.CropDialog;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-public class ImageModel {
+public class ImageModel implements CropDialog.CropListener{
     private BufferedImage image;
+    private BufferedImage cropImage;
     private int imageWidth;
     private int imageHeight;
     public enum ImageState {
-        ORIGINAL, GRAYSCALE, ORDERED_DITHER, AUTO_LEVEL
+        ORIGINAL, GRAYSCALE, ORDERED_DITHER, AUTO_LEVEL, CROPPED
     }
     private ImageState currentState;
     public void readBmpFile(File bmpFile) throws IOException {
@@ -37,16 +39,33 @@ public class ImageModel {
             case GRAYSCALE -> getGrayscaleImage();
             case ORDERED_DITHER -> getDitheredImage();
             case AUTO_LEVEL -> getAutoLevelImage();
+            case CROPPED -> getCropImage();
             default -> image;
         };
     }
-    public BufferedImage getCropImage(int x, int y, int width, int height){
-        BufferedImage cropImage = null;
-        if (image != null) {
-            cropImage = image.getSubimage(x, y, width, height);
-        }
+    public BufferedImage getCropImage() {
         return cropImage;
     }
+    @Override
+    public void onCrop(int x, int y, int width, int height) {
+//        System.out.println("Requested crop: x=" + x + ", y=" + y + ", width=" + width + ", height=" + height);
+//        System.out.println("Image dimensions: width=" + imageWidth + ", height=" + imageHeight);
+        if (image == null) {
+            System.out.println("No image loaded.");
+            cropImage = null;
+            return;
+        }
+
+        if (x < 0 || y < 0 || x + width > imageWidth || y + height > imageHeight) {
+            System.out.println("Crop area out of bounds.");
+            cropImage = null;
+            return;
+        }
+
+        cropImage = image.getSubimage(x, y, width, height);
+        setCurrentState(ImageState.CROPPED);
+    }
+
     public void setCurrentState(ImageState state) {
         this.currentState = state;
     }

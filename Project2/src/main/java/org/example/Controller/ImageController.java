@@ -1,6 +1,7 @@
 package org.example.Controller;
 import org.apache.commons.imaging.ImageWriteException;
 import org.example.Model.ImageModel;
+import org.example.View.CropDialog;
 import org.example.View.ImageView;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -9,10 +10,13 @@ import java.io.IOException;
 public class ImageController {
     private final ImageModel model;
     private final ImageView view;
+    private final CropDialog cropDialog;
 
     public ImageController(ImageModel model, ImageView view) {
         this.model = model;
         this.view = view;
+        this.cropDialog = new CropDialog(view);
+        cropDialog.addListener(model);
         view.setVisible(true);
     }
     public void init(){
@@ -22,6 +26,7 @@ public class ImageController {
         view.addDitherButtonListener(e -> handleDitheringOperation());
         view.addAutoLevelButtonListener(e -> handleAutoLevelOperation());
         view.addExportButtonListener(e -> handleExportOperation());
+        view.addCropButtonListener(e -> handleCropOperation());
     }
     private void handleFileOpen() {
         File selectedFile = view.showOpenFileDialog();
@@ -67,8 +72,8 @@ public class ImageController {
     }
 
     private void handleExportOperation() { // New method to handle exporting the image
-        BufferedImage grayscaleImage = model.getCurrentImage();
-        if (grayscaleImage == null) {
+        BufferedImage currentImage = model.getCurrentImage();
+        if (currentImage == null) {
             view.showError("No image loaded to export.");
             return;
         }
@@ -76,12 +81,20 @@ public class ImageController {
         File file = view.showExportFileDialog();
         if (file != null) {
             try {
-                model.saveImage(grayscaleImage, file); // Delegate the save action to the model
+                model.saveImage(currentImage, file); // Delegate the save action to the model
             } catch (IOException | ImageWriteException ex) {
                 view.showError("Failed to export image: " + ex.getMessage());
             }
         }
     }
+    private void handleCropOperation() {
+        cropDialog.setVisible(true);
 
-
+        BufferedImage croppedImage = model.getCropImage();
+        if (croppedImage != null) {
+            view.updateImage(croppedImage);
+        } else {
+            view.showError("Invalid crop area.");
+        }
+    }
 }
