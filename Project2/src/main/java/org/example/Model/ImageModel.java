@@ -17,6 +17,9 @@ public class ImageModel implements CropDialog.CropListener{
     public enum ImageState {
         ORIGINAL, GRAYSCALE, ORDERED_DITHER, AUTO_LEVEL, CROPPED
     }
+    private static final int RED = 0;
+    private static final int GREEN = 1;
+    private static final int BLUE = 2;
     private ImageState currentState;
     public void readBmpFile(File bmpFile) throws IOException {
         try {
@@ -121,36 +124,50 @@ public class ImageModel implements CropDialog.CropListener{
             return null;
         }
 
-        int minIntensity = 255;
-        int maxIntensity = 0;
+        int[] minRGB = {255, 255, 255};
+        int[] maxRGB = {0, 0, 0};
 
-        // Step 1: Find the min and max intensity values
         for (int y = 0; y < imageHeight; y++) {
             for (int x = 0; x < imageWidth; x++) {
                 Color color = new Color(image.getRGB(x, y));
-                int intensity = (color.getRed() + color.getGreen() + color.getBlue()) / 3; // Grayscale intensity
-                if (intensity < minIntensity) minIntensity = intensity;
-                if (intensity > maxIntensity) maxIntensity = intensity;
+                int red = color.getRed();
+                int green = color.getGreen();
+                int blue = color.getBlue();
+
+                minRGB[RED] = Math.min(minRGB[RED], red);
+                minRGB[GREEN] = Math.min(minRGB[GREEN], green);
+                minRGB[BLUE] = Math.min(minRGB[BLUE], blue);
+
+                maxRGB[RED] = Math.max(maxRGB[RED], red);
+                maxRGB[GREEN] = Math.max(maxRGB[GREEN], green);
+                maxRGB[BLUE] = Math.max(maxRGB[BLUE], blue);
             }
         }
 
         BufferedImage autoLeveledImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
-
-        // Step 3: Apply auto-leveling to each pixel
         for (int y = 0; y < imageHeight; y++) {
             for (int x = 0; x < imageWidth; x++) {
                 Color color = new Color(image.getRGB(x, y));
-                int red = clamp(autoLevelIntensity(color.getRed(), minIntensity, maxIntensity)) ;
-                int green = clamp(autoLevelIntensity(color.getGreen(), minIntensity, maxIntensity));
-                int blue = clamp(autoLevelIntensity(color.getBlue(), minIntensity, maxIntensity));
+                int red = color.getRed();
+                int green = color.getGreen();
+                int blue = color.getBlue();
 
-                // Set new color in auto-leveled image
+                red = stretch(red, minRGB[0], maxRGB[0]);
+                green = stretch(green, minRGB[1], maxRGB[1]);
+                blue = stretch(blue, minRGB[2], maxRGB[2]);
+
                 Color newColor = new Color(red, green, blue);
                 autoLeveledImage.setRGB(x, y, newColor.getRGB());
             }
         }
-        setCurrentState(ImageState.AUTO_LEVEL);
+
         return autoLeveledImage;
+    }
+    private int stretch(int value, int min, int max) {
+        if (max == min) {
+            return value; // Avoid division by zero if all values are the same
+        }
+        return Math.min(255, Math.max(0, (value - min) * 255 / (max - min)));
     }
 
     private int clamp(int value) {

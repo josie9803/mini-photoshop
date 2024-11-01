@@ -13,7 +13,6 @@ public class ImageView extends JFrame {
     private JMenuItem autoLevelItem;
     private JMenuItem exportItem;
     private JMenuItem cropItem;
-    private CropDialog cropDialog;
 
     public ImageView() {
         setTitle("BMP Viewer");
@@ -25,7 +24,6 @@ public class ImageView extends JFrame {
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
         createMenuBar();
-        cropDialog = new CropDialog(this);
     }
 
     private void createMenuBar() {
